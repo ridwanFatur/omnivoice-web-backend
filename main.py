@@ -5,7 +5,7 @@ from sqlalchemy import text
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 import logging
-from omnivoice_utils.dummy_process import start_dummy_process
+from websocket_utils.dummy_process import start_dummy_process
 from omnivoice_utils.prepare_omnivoice import load_model
 from routers.voice_audio import router as voice_audio_router
 from routers.voice_clone_prompt import router as voice_clone_prompt_router
