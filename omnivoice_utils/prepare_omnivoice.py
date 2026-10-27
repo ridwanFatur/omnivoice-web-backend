@@ -4,6 +4,7 @@ from consts import DEBUG
 logger = logging.getLogger(__name__)
 
 model = None
+model_tasks = {}
 
 def load_model():
     global model
@@ -23,6 +24,7 @@ def load_model():
         dtype=torch.float16,
         # load_asr=True,
     )
+    model.eval()
 
     logger.info("OmniVoice model loaded successfully")
         

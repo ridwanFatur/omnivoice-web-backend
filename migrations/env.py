@@ -7,6 +7,7 @@ from sqlalchemy import engine_from_config, pool
 from database import Base, DATABASE_URL
 from models.voice_audio import VoiceAudio
 from models.voice_clone_prompt import VoiceClonePrompt
+from models.voice_generation import VoiceGeneration
 
 config = context.config
 

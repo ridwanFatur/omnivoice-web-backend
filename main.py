@@ -5,10 +5,15 @@ from sqlalchemy import text
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 import logging
+from omnivoice_utils.dummy_process import start_dummy_process
 from omnivoice_utils.prepare_omnivoice import load_model
 from routers.voice_audio import router as voice_audio_router
 from routers.voice_clone_prompt import router as voice_clone_prompt_router
+from routers.voice_generation import router as voice_generation_router
 from database import engine
+from routers.web_socket import (
+    router as web_socket_router,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,6 +38,8 @@ app.add_middleware(
 
 app.include_router(voice_audio_router)
 app.include_router(voice_clone_prompt_router)
+app.include_router(voice_generation_router)
+app.include_router(web_socket_router)
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -57,3 +64,13 @@ def health():
             "status": "error",
             "database": "disconnected",
         }
+        
+@app.post("/test")
+async def trigger_test_process():
+    task_id = start_dummy_process()
+
+    return {
+        "task_id": task_id,
+        "status": "started",
+        "websocket_url": f"/ws/logs/{task_id}",
+    }

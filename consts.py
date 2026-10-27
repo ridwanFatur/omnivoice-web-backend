@@ -15,3 +15,4 @@ ALLOWED_EXTENSIONS = {
 }
 
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+SAMPLE_RATE = 24_000
