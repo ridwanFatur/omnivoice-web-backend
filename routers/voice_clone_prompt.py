@@ -10,6 +10,7 @@ from models.voice_audio import VoiceAudio
 from models.voice_clone_prompt import VoiceClonePrompt
 from omnivoice_utils.voice_clone_prompt_utils import create_voice_clone_prompt
 from consts import DEBUG
+from websocket_utils.voice_clone_prompt import start_create_voice_clone_prompt
 
 router = APIRouter(
     prefix="/api/voice-clone-prompt",
@@ -26,7 +27,7 @@ UPLOAD_DIR = (
 DbSession = Annotated[Session, Depends(get_db)]
 
 @router.post("/")
-def generate_voice_clone_prompt(
+async def generate_voice_clone_prompt(
     db: DbSession,
     name: Annotated[str, Form()],
     voice_audio_id: Annotated[str, Form()],
@@ -57,40 +58,20 @@ def generate_voice_clone_prompt(
 		)       
 
     try:
-        audio_length, ref_rms, ref_audio_tokens = create_voice_clone_prompt(voice_audio, ref_wav_path, ref_audio_tokens_path)
-        prompt = VoiceClonePrompt(
-            id=prompt_id,
-            name=name,
-            tags=tags,
-            ref_audio_tokens_path=str(ref_audio_tokens_path),
-            ref_wav_path=str(ref_wav_path),
-            ref_text=ref_text,
-            ref_rms=ref_rms,
-            voice_audio_id=voice_audio.id,
-            audio_length=audio_length,
-            ref_audio_tokens_shape=str(
-                list(ref_audio_tokens.shape)
-            ),
+        task_id = start_create_voice_clone_prompt(
+            voice_audio.id, 
+            ref_wav_path, 
+            ref_audio_tokens_path,
+            prompt_id,
+			name,
+			tags,
+			ref_text,
         )
-
-        db.add(prompt)
-        db.commit()
-        db.refresh(prompt)
-
         return {
-            "id": prompt.id,
-            "created_at": prompt.created_at,
-            "name": prompt.name,
-            "tags": prompt.tags,
-            "ref_audio_tokens_path": prompt.ref_audio_tokens_path,
-            "ref_wav_path": prompt.ref_wav_path,
-            "ref_text": prompt.ref_text,
-            "ref_rms": prompt.ref_rms,
-            "voice_audio_id": prompt.voice_audio_id,
-            "audio_length": prompt.audio_length,
-            "ref_audio_tokens_shape": prompt.ref_audio_tokens_shape,
-        }
-
+			"task_id": task_id,
+			"status": "started",
+			"websocket_url": f"/ws/logs/{task_id}",
+		}
     except Exception:
         db.rollback()
 
