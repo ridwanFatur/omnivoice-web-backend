@@ -1,13 +1,15 @@
-import uuid
-from models.voice_clone_prompt import VoiceClonePrompt
 import asyncio
+import logging
+import uuid
+
+import state
 from database import SessionLocal
 from models.voice_audio import VoiceAudio
-import logging
-import state
+from models.voice_clone_prompt import VoiceClonePrompt
 from utils.voice_clone_prompt_utils import create_voice_clone_prompt
 
 logger = logging.getLogger(__name__)
+
 
 async def run_create_voice_clone_prompt_task(
     task_id: str,
@@ -21,7 +23,7 @@ async def run_create_voice_clone_prompt_task(
 ):
     task = state.model_tasks[task_id]
     db = SessionLocal()
-    
+
     async def add_log(message: str, type: str):
         entry = {
             "task_id": task_id,
@@ -35,15 +37,16 @@ async def run_create_voice_clone_prompt_task(
             task["condition"].notify_all()
 
         logger.info("[%s] %s", task_id, message)
-        
-    await add_log("Start Process", "start")
+
     try:
+        await add_log("Start Process", "start")
+
         voice_audio = db.get(VoiceAudio, voice_audio_id)
 
         if voice_audio is None:
             raise ValueError("Voice audio not found")
 
-        audio_length, ref_rms, ref_audio_tokens = (
+        audio_length, ref_rms, ref_audio_tokens, ref_audio_tokens_path = (
             create_voice_clone_prompt(
                 voice_audio,
                 ref_wav_path,
@@ -69,22 +72,25 @@ async def run_create_voice_clone_prompt_task(
         db.add(prompt)
         db.commit()
         db.refresh(prompt)
-        
+
         await add_log("Finished Process", "finished")
 
     except Exception as exc:
         db.rollback()
+        logger.exception("Task %s failed", task_id)
         await add_log(f"Process failed: {exc}", "error")
+
     finally:
-        db.close()  
+        db.close()
+
         async with task["condition"]:
             task["done"] = True
             task["condition"].notify_all()
-    
+
 
 def start_create_voice_clone_prompt_task(
-    voice_audio_id, 
-    ref_wav_path, 
+    voice_audio_id,
+    ref_wav_path,
     ref_audio_tokens_path,
     prompt_id,
     name,
@@ -92,22 +98,23 @@ def start_create_voice_clone_prompt_task(
     ref_text,
 ):
     task_id = str(uuid.uuid4())
+
     state.model_tasks[task_id] = {
         "logs": [],
         "name": "create_voice_clone_prompt",
         "done": False,
         "condition": asyncio.Condition(),
-    }
-    asyncio.create_task(
-        run_create_voice_clone_prompt_task(
-            task_id,
-            voice_audio_id, 
-            ref_wav_path, 
+        "args": (
+            voice_audio_id,
+            ref_wav_path,
             ref_audio_tokens_path,
             prompt_id,
-			name,
-			tags,
-			ref_text,
-        )
-    )
+            name,
+            tags,
+            ref_text,
+        ),
+    }
+
+    state.task_queue.put_nowait(task_id)
+
     return task_id

@@ -8,6 +8,7 @@ import logging
 from database import engine
 from routers import voice_audio_router, voice_clone_prompt_router, voice_generation_router, web_socket_task_router
 from tasks.dummy_task import start_dummy_task
+from tasks.task_worker import task_worker
 from utils.model_loader import load_model
 
 logging.basicConfig(
@@ -15,11 +16,35 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 
+import asyncio
+import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from utils.model_loader import load_model
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logging.info("FastAPI startup")
+
     load_model()
-    yield
+
+    worker = asyncio.create_task(task_worker())
+
+    try:
+        yield
+    finally:
+        worker.cancel()
+
+        try:
+            await worker
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(lifespan=lifespan)
 
 app = FastAPI(lifespan=lifespan)
 

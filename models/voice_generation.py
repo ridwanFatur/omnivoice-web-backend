@@ -1,3 +1,4 @@
+
 import time
 import uuid
 
@@ -23,11 +24,19 @@ class VoiceGeneration(Base):
     text: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     path: Mapped[str] = mapped_column(String, nullable=False)
-    audio_length: Mapped[int] = mapped_column(Integer, nullable=False)
+    generated_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+    audio_lengths: Mapped[list[int]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+    )
     voice_clone_prompt_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("voice_clone_prompt.id", ondelete="SET NULL"),
-		nullable=True,
+        nullable=True,
     )
     generation_config: Mapped[dict] = mapped_column(
         JSON,

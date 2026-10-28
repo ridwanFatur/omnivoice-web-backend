@@ -2,6 +2,7 @@ import asyncio
 import random
 import uuid
 import logging
+
 import state
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,7 @@ MESSAGES = [
     "Generating speech...",
     "Applying voice characteristics...",
 ]
+
 
 async def run_dummy_task(task_id: str):
     task = state.model_tasks[task_id]
@@ -41,8 +43,9 @@ async def run_dummy_task(task_id: str):
 
         await add_log("Process completed")
 
-    except Exception as exc:
-        await add_log(f"Process failed: {exc}")
+    except Exception:
+        logger.exception("Task %s failed", task_id)
+        await add_log("Process failed")
 
     finally:
         async with task["condition"]:
@@ -59,6 +62,6 @@ def start_dummy_task() -> str:
         "condition": asyncio.Condition(),
     }
 
-    asyncio.create_task(run_dummy_task(task_id))
+    state.task_queue.put_nowait(task_id)
 
     return task_id

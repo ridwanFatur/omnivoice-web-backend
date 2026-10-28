@@ -12,7 +12,6 @@ def create_voice_clone_prompt(
     ref_audio_tokens_path,
 ):
     if DEBUG:
-        time.sleep(10)
         ref_audio_tokens_path = f"{ref_audio_tokens_path}.npy"
         return _create_voice_clone_prompt_debug(
             voice_audio,
@@ -53,7 +52,7 @@ def _create_voice_clone_prompt_debug(
     np.save(ref_wav_path, ref_wav)
     np.save(ref_audio_tokens_path, ref_audio_tokens)
 
-    return audio_length, ref_rms, ref_audio_tokens
+    return audio_length, ref_rms, ref_audio_tokens, ref_audio_tokens_path
 
 
 def _create_voice_clone_prompt(
@@ -98,4 +97,4 @@ def _create_voice_clone_prompt(
         np.save(ref_wav_path, ref_wav)
         torch.save(ref_audio_tokens, ref_audio_tokens_path)
     
-        return audio_length, ref_rms, ref_audio_tokens
+        return audio_length, ref_rms, ref_audio_tokens, ref_audio_tokens_path

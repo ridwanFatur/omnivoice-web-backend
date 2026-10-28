@@ -1,8 +1,8 @@
 """create tables
 
-Revision ID: e2a3294290bb
+Revision ID: 3b14ed52fb2b
 Revises: 
-Create Date: 2026-10-28 10:58:11.176359
+Create Date: 2026-10-28 13:49:47.298771
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e2a3294290bb'
+revision: str = '3b14ed52fb2b'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -43,7 +43,7 @@ def upgrade() -> None:
     sa.Column('voice_audio_id', sa.String(length=36), nullable=True),
     sa.Column('audio_length', sa.Integer(), nullable=False),
     sa.Column('ref_audio_tokens_shape', sa.String(), nullable=False),
-    sa.ForeignKeyConstraint(['voice_audio_id'], ['voice_audio.id'], ),
+    sa.ForeignKeyConstraint(['voice_audio_id'], ['voice_audio.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('voice_generation',
@@ -52,10 +52,11 @@ def upgrade() -> None:
     sa.Column('text', sa.String(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('path', sa.String(), nullable=False),
-    sa.Column('audio_length', sa.Integer(), nullable=False),
+    sa.Column('generated_count', sa.Integer(), nullable=False),
+    sa.Column('audio_lengths', sa.JSON(), nullable=False),
     sa.Column('voice_clone_prompt_id', sa.String(length=36), nullable=True),
     sa.Column('generation_config', sa.JSON(), nullable=False),
-    sa.ForeignKeyConstraint(['voice_clone_prompt_id'], ['voice_clone_prompt.id'], ),
+    sa.ForeignKeyConstraint(['voice_clone_prompt_id'], ['voice_clone_prompt.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###

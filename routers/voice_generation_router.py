@@ -46,9 +46,11 @@ def serialize_generation(generation: VoiceGeneration) -> dict:
     return {
         "id": generation.id,
         "created_at": generation.created_at,
+        "text": generation.text,
         "name": generation.name,
         "path": generation.path,
-        "audio_length": generation.audio_length,
+        "generated_count": generation.generated_count,
+        "audio_lengths": generation.audio_lengths,
         "voice_clone_prompt_id": generation.voice_clone_prompt_id,
         "generation_config": generation.generation_config,
     }
@@ -69,7 +71,7 @@ async def create_voice_generation(
         
     generation_id = str(uuid.uuid4())
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    audio_path = UPLOAD_DIR / f"gen-audio-{generation_id}.wav"
+    audio_path = UPLOAD_DIR / f"gen-audio-{generation_id}"
     
     try:
         task_id = start_generate_voice_task(
