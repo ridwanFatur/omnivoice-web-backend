@@ -20,6 +20,7 @@ class VoiceGeneration(Base):
         nullable=False,
         default=lambda: int(time.time() * 1000),
     )
+    text: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     path: Mapped[str] = mapped_column(String, nullable=False)
     audio_length: Mapped[int] = mapped_column(Integer, nullable=False)

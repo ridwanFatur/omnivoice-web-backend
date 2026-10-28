@@ -1,23 +1,18 @@
 import logging
-import time
 import uuid
-from dataclasses import asdict
+
 from pathlib import Path
 from typing import Annotated, Any
 
-import numpy as np
-import soundfile as sf
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from consts import SAMPLE_RATE
 from database import get_db
 from models.voice_clone_prompt import VoiceClonePrompt
 from models.voice_generation import VoiceGeneration
-from omnivoice_utils.data_models import GenerationConfig, GenerationParameter
-from omnivoice_utils.generate_audio_utils import generate_voice
+from websocket_utils.voice_generation import start_generate_voice
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +32,7 @@ DbSession = Annotated[Session, Depends(get_db)]
 
 class VoiceGenerationCreate(BaseModel):
     name: str
+    text: str
     voice_clone_prompt_id: str | None = None
     generation_config: dict[str, Any] = Field(default_factory=dict)
     generation_parameter: dict[str, Any] = Field(default_factory=dict)
@@ -66,13 +62,7 @@ def create_voice_generation(
     voice_clone_prompt = None
 
     if payload.voice_clone_prompt_id:
-        voice_clone_prompt = (
-            db.query(VoiceClonePrompt)
-            .filter(
-                VoiceClonePrompt.id == payload.voice_clone_prompt_id
-            )
-            .first()
-        )
+        voice_clone_prompt = db.get(VoiceClonePrompt, payload.voice_clone_prompt_id)
 
         if voice_clone_prompt is None:
             raise HTTPException(
@@ -80,75 +70,30 @@ def create_voice_generation(
                 detail="Voice clone prompt not found",
             )
 
-    generation_parameter = GenerationParameter.from_dict(
-        payload.generation_parameter
-    )
-
-    generation_config = GenerationConfig.from_dict(
-        payload.generation_config
-    )
-
-    combined_config = {
-        "generation_config": asdict(generation_config),
-        "generation_parameter": asdict(generation_parameter),
-    }
-
     generation_id = str(uuid.uuid4())
-    audio_path = UPLOAD_DIR / f"gen-audio-{generation_id}.wav"
-
-    generated_audio = generate_voice(
-        voice_clone_prompt=voice_clone_prompt,
-        generation_config=payload.generation_config,
-        generation_parameter=generation_parameter,
-    )
-
-    generated_audio = np.asarray(
-        generated_audio,
-        dtype=np.float32,
-    ).squeeze()
-
-    if generated_audio.ndim != 1:
-        raise HTTPException(
-            status_code=500,
-            detail="Generated audio must be a mono waveform",
-        )
-
-    audio_length = round(len(generated_audio) / SAMPLE_RATE)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
+    audio_path = UPLOAD_DIR / f"gen-audio-{generation_id}.wav"
+    
     try:
-        sf.write(
-            str(audio_path),
-            generated_audio,
-            SAMPLE_RATE,
-            format="WAV",
-        )
-
-        generation = VoiceGeneration(
-            id=generation_id,
-            created_at=int(time.time() * 1000),
-            name=payload.name,
-            path=str(audio_path),
-            audio_length=audio_length,
-            voice_clone_prompt_id=(
-                voice_clone_prompt.id
-                if voice_clone_prompt is not None
-                else None
-            ),
-            generation_config=combined_config,
-        )
-
-        db.add(generation)
-        db.commit()
-        db.refresh(generation)
-
-        return serialize_generation(generation)
-
+        task_id = start_generate_voice(
+            text=payload.text,
+			generation_id=generation_id,
+   			voice_clone_prompt_id=payload.voice_clone_prompt_id,
+      		generation_parameter=payload.generation_parameter,
+        	generation_config=payload.generation_config,
+         	audio_path=audio_path,
+          	name=payload.name
+		)
+        return {
+			"task_id": task_id,
+			"status": "started",
+			"websocket_url": f"/ws/logs/{task_id}",
+		}
     except Exception:
         db.rollback()
         audio_path.unlink(missing_ok=True)
-        logger.exception("Failed to create voice generation")
-        raise
+        raise            
+
 
 
 @router.get("/")
