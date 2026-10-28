@@ -27,8 +27,8 @@ class VoiceClonePrompt(Base):
     ref_rms: Mapped[float] = mapped_column(Float, nullable=False)
     voice_audio_id: Mapped[str | None] = mapped_column(
         String(36),
-        ForeignKey("voice_audio.id"),
-        nullable=True,
+		ForeignKey("voice_audio.id", ondelete="SET NULL"),
+		nullable=True,
     )
     audio_length: Mapped[int] = mapped_column(Integer, nullable=False)
     ref_audio_tokens_shape: Mapped[str] = mapped_column(String, nullable=False)

@@ -26,8 +26,8 @@ class VoiceGeneration(Base):
     audio_length: Mapped[int] = mapped_column(Integer, nullable=False)
     voice_clone_prompt_id: Mapped[str | None] = mapped_column(
         String(36),
-        ForeignKey("voice_clone_prompt.id"),
-        nullable=True,
+        ForeignKey("voice_clone_prompt.id", ondelete="SET NULL"),
+		nullable=True,
     )
     generation_config: Mapped[dict] = mapped_column(
         JSON,
