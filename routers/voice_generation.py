@@ -55,21 +55,18 @@ def serialize_generation(generation: VoiceGeneration) -> dict:
 
 
 @router.post("/")
-def create_voice_generation(
+async def create_voice_generation(
     payload: VoiceGenerationCreate,
     db: DbSession,
 ):
-    voice_clone_prompt = None
+    voice_clone_prompt = db.get(VoiceClonePrompt, payload.voice_clone_prompt_id)
 
-    if payload.voice_clone_prompt_id:
-        voice_clone_prompt = db.get(VoiceClonePrompt, payload.voice_clone_prompt_id)
-
-        if voice_clone_prompt is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Voice clone prompt not found",
-            )
-
+    if voice_clone_prompt is None:
+        raise HTTPException(
+			status_code=404,
+			detail="Voice clone prompt not found",
+		)
+        
     generation_id = str(uuid.uuid4())
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     audio_path = UPLOAD_DIR / f"gen-audio-{generation_id}.wav"

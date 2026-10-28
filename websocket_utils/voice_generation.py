@@ -46,8 +46,12 @@ async def run_generate_voice(
     
     try:     
         voice_clone_prompt = db.get(VoiceClonePrompt, voice_clone_prompt_id)
-        if voice_clone_prompt:
+        if voice_clone_prompt is None:
             raise ValueError("Voice clone prompt not found")
+        
+        if DEBUG:
+            await asyncio.sleep(10)
+            
         generation_parameter = GenerationParameter.from_dict(
 			generation_parameter
 		)
@@ -83,6 +87,7 @@ async def run_generate_voice(
         )
         generation = VoiceGeneration(
             id=generation_id,
+            text=text,
             created_at=int(time.time() * 1000),
             name=name,
             path=str(audio_path),
