@@ -1,13 +1,11 @@
 import logging
 import uuid
-from consts import DEBUG
 from models.voice_clone_prompt import VoiceClonePrompt
 import asyncio
 import numpy as np
 import soundfile as sf
 from database import SessionLocal
 import time
-from consts import SAMPLE_RATE
 from dataclasses import asdict
 from models.voice_generation import VoiceGeneration
 import state
@@ -16,7 +14,7 @@ from utils.voice_generation_utils import generate_voice
 
 logger = logging.getLogger(__name__)
 
-async def run_generate_voice(
+async def run_generate_voice_task(
 	task_id: str,
  	text: str,
  	generation_id: str,
@@ -48,9 +46,6 @@ async def run_generate_voice(
         voice_clone_prompt = db.get(VoiceClonePrompt, voice_clone_prompt_id)
         if voice_clone_prompt is None:
             raise ValueError("Voice clone prompt not found")
-        
-        if DEBUG:
-            await asyncio.sleep(10)
             
         generation_parameter = GenerationParameter.from_dict(
 			generation_parameter
@@ -63,7 +58,7 @@ async def run_generate_voice(
 			"generation_parameter": asdict(generation_parameter),
 		}
         
-        generated_audio = generate_voice(
+        generated_audio, sample_rate = generate_voice(
             text=text,
 			voice_clone_prompt=voice_clone_prompt,
 			generation_config=generation_config,
@@ -77,12 +72,12 @@ async def run_generate_voice(
         if generated_audio.ndim != 1:
             raise ValueError("Generated audio must be a mono waveform")
         
-        audio_length = round(len(generated_audio) / SAMPLE_RATE)
+        audio_length = round(len(generated_audio) / sample_rate)
         
         sf.write(
             str(audio_path),
             generated_audio,
-            SAMPLE_RATE,
+            sample_rate,
             format="WAV",
         )
         generation = VoiceGeneration(
@@ -115,7 +110,7 @@ async def run_generate_voice(
             task["condition"].notify_all()       
 
 
-def start_generate_voice(
+def start_generate_voice_task(
     text,
 	generation_id,
  	voice_clone_prompt_id,

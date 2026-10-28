@@ -53,7 +53,7 @@ class VoiceAudioListResponse(BaseModel):
     page_size: int
 
 @router.post("/", response_model=VoiceAudioResponse, status_code=201)
-def upload_voice_audio(
+def create_voice_audio(
     db: DbSession,
     file: Annotated[UploadFile, File()],
     name: Annotated[str, Form()],

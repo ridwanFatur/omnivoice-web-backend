@@ -8,9 +8,7 @@ from sqlalchemy import func, or_
 from database import get_db
 from models.voice_audio import VoiceAudio
 from models.voice_clone_prompt import VoiceClonePrompt
-from omnivoice_utils.voice_clone_prompt_utils import create_voice_clone_prompt
-from consts import DEBUG
-from websocket_utils.voice_clone_prompt import start_create_voice_clone_prompt
+from tasks.voice_clone_prompt_task import start_create_voice_clone_prompt_task
 
 router = APIRouter(
     prefix="/api/voice-clone-prompt",
@@ -27,7 +25,7 @@ UPLOAD_DIR = (
 DbSession = Annotated[Session, Depends(get_db)]
 
 @router.post("/")
-async def generate_voice_clone_prompt(
+async def create_voice_clone_prompt(
     db: DbSession,
     name: Annotated[str, Form()],
     voice_audio_id: Annotated[str, Form()],
@@ -47,18 +45,10 @@ async def generate_voice_clone_prompt(
     prompt_dir.mkdir(parents=True, exist_ok=True)
 
     ref_wav_path = prompt_dir / f"ref_wav-{prompt_id}.npy"
-    
-    if DEBUG:
-        ref_audio_tokens_path = (
-			prompt_dir / f"ref_audio_tokens-{prompt_id}.npy"
-		)
-    else:
-        ref_audio_tokens_path = (
-			prompt_dir / f"ref_audio_tokens-{prompt_id}.pt"
-		)       
+    ref_audio_tokens_path = prompt_dir / f"ref_audio_tokens-{prompt_id}"
 
     try:
-        task_id = start_create_voice_clone_prompt(
+        task_id = start_create_voice_clone_prompt_task(
             voice_audio.id, 
             ref_wav_path, 
             ref_audio_tokens_path,

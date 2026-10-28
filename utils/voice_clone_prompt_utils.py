@@ -13,12 +13,14 @@ def create_voice_clone_prompt(
 ):
     if DEBUG:
         time.sleep(10)
+        ref_audio_tokens_path = f"{ref_audio_tokens_path}.npy"
         return _create_voice_clone_prompt_debug(
             voice_audio,
             ref_wav_path,
             ref_audio_tokens_path,
         )
-
+        
+    ref_audio_tokens_path = f"{ref_audio_tokens_path}.pt"
     return _create_voice_clone_prompt(
         voice_audio,
         ref_wav_path,

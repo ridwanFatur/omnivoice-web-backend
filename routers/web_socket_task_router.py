@@ -1,14 +1,13 @@
 import logging
-
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from omnivoice_utils.prepare_omnivoice import model_tasks
+import state
 
 router = APIRouter(tags=["WebSocket"])
 logger = logging.getLogger(__name__)
 
 @router.websocket("/ws/logs/{task_id}")
 async def process_logs(websocket: WebSocket, task_id: str):
-    task = model_tasks.get(task_id)
+    task = state.model_tasks.get(task_id)
 
     if task is None:
         await websocket.close(code=1008, reason="Task not found")

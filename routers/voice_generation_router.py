@@ -12,12 +12,12 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.voice_clone_prompt import VoiceClonePrompt
 from models.voice_generation import VoiceGeneration
-from websocket_utils.voice_generation import start_generate_voice
+from tasks.voice_generation_task import start_generate_voice_task
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/api/generate-audio",
+    prefix="/api/voice-generation",
     tags=["Generate Audio"],
 )
 
@@ -72,7 +72,7 @@ async def create_voice_generation(
     audio_path = UPLOAD_DIR / f"gen-audio-{generation_id}.wav"
     
     try:
-        task_id = start_generate_voice(
+        task_id = start_generate_voice_task(
             text=payload.text,
 			generation_id=generation_id,
    			voice_clone_prompt_id=payload.voice_clone_prompt_id,
@@ -90,8 +90,6 @@ async def create_voice_generation(
         db.rollback()
         audio_path.unlink(missing_ok=True)
         raise            
-
-
 
 @router.get("/")
 def list_voice_generations(

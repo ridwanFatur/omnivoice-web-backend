@@ -1,5 +1,5 @@
 import numpy as np
-
+import time
 from consts import DEBUG
 from models.voice_clone_prompt import VoiceClonePrompt
 from dataclasses import asdict
@@ -13,7 +13,9 @@ def generate_voice(
     generation_parameter: GenerationParameter,
 ) -> np.ndarray:
     if DEBUG:
-        return np.random.rand(1, 100_000).astype(np.float32)
+        time.sleep(10)
+        sample_rate = 24_000
+        return np.random.rand(1, 100_000).astype(np.float32), sample_rate
     else:
         from omnivoice.models.omnivoice import OmniVoiceGenerationConfig
         from omnivoice.models.omnivoice import VoiceClonePrompt as _VoiceClonePrompt
@@ -71,4 +73,4 @@ def generate_voice(
                     gen_config,  # type: ignore[arg-type]
                 )
             )
-        return generated_audios[0]
+        return generated_audios[0], state.model.sampling_rate

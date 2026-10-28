@@ -16,4 +16,3 @@ ALLOWED_EXTENSIONS = {
 
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 LOAD_ASR = os.getenv("LOAD_ASR", "false").lower() == "true"
-SAMPLE_RATE = 24_000
